@@ -22,6 +22,18 @@ export function def (obj: Object, key: string, val: any, enumerable?: boolean) {
 
 /**
  * Parse simple path.
+ * 使用:
+ *   var obj = {
+ *       a:{
+ *         b:{
+ *           c:"text"
+ *         }
+ *       }
+ *   }
+ *   var parseFn = parsePath("a.b.c");
+ *   parseFn(obj);//"text"
+ *   or
+ *    ==>>parsePath("a.b.c")(obj) //"text"
  */
 const bailRE = /[^\w.$]/
 export function parsePath (path: string): any {

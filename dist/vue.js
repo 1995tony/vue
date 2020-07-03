@@ -1,6 +1,6 @@
 /*!
  * Vue.js v2.5.16
- * (c) 2014-2018 Evan You
+ * (c) 2014-2020 Evan You
  * Released under the MIT License.
  */
 (function (global, factory) {
@@ -556,7 +556,7 @@ if (typeof Set !== 'undefined' && isNative(Set)) {
   _Set = Set;
 } else {
   // a non-standard Set polyfill that only works with primitive keys.
-  _Set = (function () {
+  _Set = /*@__PURE__*/(function () {
     function Set () {
       this.set = Object.create(null);
     }
@@ -972,6 +972,8 @@ function defineReactive (
 ) {
   var dep = new Dep();
 
+  // 取得 obj 的 key 屬性, 像是 defineProerty 會帶的屬性, writable, value, ...
+  // configurable, 是否可改變其特徵, writable, value, ...
   var property = Object.getOwnPropertyDescriptor(obj, key);
   if (property && property.configurable === false) {
     return
@@ -2446,12 +2448,10 @@ function updateComponentListeners (
 function eventsMixin (Vue) {
   var hookRE = /^hook:/;
   Vue.prototype.$on = function (event, fn) {
-    var this$1 = this;
-
     var vm = this;
     if (Array.isArray(event)) {
       for (var i = 0, l = event.length; i < l; i++) {
-        this$1.$on(event[i], fn);
+        this.$on(event[i], fn);
       }
     } else {
       (vm._events[event] || (vm._events[event] = [])).push(fn);
@@ -2476,8 +2476,6 @@ function eventsMixin (Vue) {
   };
 
   Vue.prototype.$off = function (event, fn) {
-    var this$1 = this;
-
     var vm = this;
     // all
     if (!arguments.length) {
@@ -2487,7 +2485,7 @@ function eventsMixin (Vue) {
     // array of events
     if (Array.isArray(event)) {
       for (var i = 0, l = event.length; i < l; i++) {
-        this$1.$off(event[i], fn);
+        this.$off(event[i], fn);
       }
       return vm
     }
@@ -3174,13 +3172,11 @@ Watcher.prototype.addDep = function addDep (dep) {
  * Clean up for dependency collection.
  */
 Watcher.prototype.cleanupDeps = function cleanupDeps () {
-    var this$1 = this;
-
   var i = this.deps.length;
   while (i--) {
-    var dep = this$1.deps[i];
-    if (!this$1.newDepIds.has(dep.id)) {
-      dep.removeSub(this$1);
+    var dep = this.deps[i];
+    if (!this.newDepIds.has(dep.id)) {
+      dep.removeSub(this);
     }
   }
   var tmp = this.depIds;
@@ -3252,11 +3248,9 @@ Watcher.prototype.evaluate = function evaluate () {
  * Depend on all deps collected by this watcher.
  */
 Watcher.prototype.depend = function depend () {
-    var this$1 = this;
-
   var i = this.deps.length;
   while (i--) {
-    this$1.deps[i].depend();
+    this.deps[i].depend();
   }
 };
 
@@ -3264,8 +3258,6 @@ Watcher.prototype.depend = function depend () {
  * Remove self from all dependencies' subscriber list.
  */
 Watcher.prototype.teardown = function teardown () {
-    var this$1 = this;
-
   if (this.active) {
     // remove self from vm's watcher list
     // this is a somewhat expensive operation so we skip it
@@ -3275,7 +3267,7 @@ Watcher.prototype.teardown = function teardown () {
     }
     var i = this.deps.length;
     while (i--) {
-      this$1.deps[i].removeSub(this$1);
+      this.deps[i].removeSub(this);
     }
     this.active = false;
   }
@@ -4199,6 +4191,7 @@ function createComponent (
 
   // if at this stage it's not a constructor or an async component factory,
   // reject.
+  // 如果在該階段 Ctor 依然不是一個構造函數或是一個異步組件工廠則直接返回
   if (typeof Ctor !== 'function') {
     {
       warn(("Invalid Component definition: " + (String(Ctor))), context);
@@ -4207,10 +4200,12 @@ function createComponent (
   }
 
   // async component
+  // 處理異步組件
   var asyncFactory;
   if (isUndef(Ctor.cid)) {
     asyncFactory = Ctor;
     Ctor = resolveAsyncComponent(asyncFactory, baseCtor, context);
+    // 若不是異步組件
     if (Ctor === undefined) {
       // return a placeholder node for async component, which is rendered
       // as a comment node but preserves all the raw information for the node.
@@ -4340,6 +4335,7 @@ function createElement (
   normalizationType,
   alwaysNormalize
 ) {
+  // 兼容不傳 data 的情況
   if (Array.isArray(data) || isPrimitive(data)) {
     normalizationType = children;
     children = data;
@@ -4348,6 +4344,7 @@ function createElement (
   if (isTrue(alwaysNormalize)) {
     normalizationType = ALWAYS_NORMALIZE;
   }
+  // 創建虛擬節點
   return _createElement(context, tag, data, children, normalizationType)
 }
 
@@ -4358,6 +4355,8 @@ function _createElement (
   children,
   normalizationType
 ) {
+  // 如果 data 未定義 (undefined 或是 null) 或者 data 的 __ob__ 已經定義(代表已經被 observed)，上面綁定了 Observer 對象
+  // 那麼創建一個空節點
   if (isDef(data) && isDef((data).__ob__)) {
     "development" !== 'production' && warn(
       "Avoid using observed data object as vnode data: " + (JSON.stringify(data)) + "\n" +
@@ -4370,6 +4369,7 @@ function _createElement (
   if (isDef(data) && isDef(data.is)) {
     tag = data.is;
   }
+  // 若 tag 不存在，也創立一個 空節點
   if (!tag) {
     // in case of component :is set to falsy value
     return createEmptyVNode()
@@ -4387,6 +4387,7 @@ function _createElement (
     }
   }
   // support single function children as default scoped slot
+  // 默認作用域插槽
   if (Array.isArray(children) &&
     typeof children[0] === 'function'
   ) {
@@ -4402,20 +4403,25 @@ function _createElement (
   var vnode, ns;
   if (typeof tag === 'string') {
     var Ctor;
+    // 獲取 tag 的名字空間
     ns = (context.$vnode && context.$vnode.ns) || config.getTagNamespace(tag);
+    // 判斷是否保留的標籤
     if (config.isReservedTag(tag)) {
       // platform built-in elements
+      // 若是保留的標籤，則創立一個相應節點
       vnode = new VNode(
         config.parsePlatformTagName(tag), data, children,
         undefined, undefined, context
       );
     } else if (isDef(Ctor = resolveAsset(context.$options, 'components', tag))) {
       // component
+      // 從 vm 實例的 option 的 components 中尋找該 tag，存在則就是一個組件，創建相應節點，Ctor 為組件的構造類
       vnode = createComponent(Ctor, data, context, children, tag);
     } else {
       // unknown or unlisted namespaced elements
       // check at runtime because it may get assigned a namespace when its
       // parent normalizes children
+      // 未知的元素，在運行時檢查，因為父組件可能在序列化子組件的時候分配一個名字空間
       vnode = new VNode(
         tag, data, children,
         undefined, undefined, context
@@ -4423,15 +4429,18 @@ function _createElement (
     }
   } else {
     // direct component options / constructor
+    // tag 不是字符串的時候則是組件的構造類
     vnode = createComponent(tag, data, context, children);
   }
   if (Array.isArray(vnode)) {
     return vnode
   } else if (isDef(vnode)) {
+    // 若有名字空間，則遞規所有子節點應用該名字空間
     if (isDef(ns)) { applyNS(vnode, ns); }
     if (isDef(data)) { registerDeepBindings(data); }
     return vnode
   } else {
+    // 如果 vnode 沒有成功創建則創建空節點
     return createEmptyVNode()
   }
 }
@@ -4942,10 +4951,8 @@ var KeepAlive = {
   },
 
   destroyed: function destroyed () {
-    var this$1 = this;
-
-    for (var key in this$1.cache) {
-      pruneCacheEntry(this$1.cache, key, this$1.keys);
+    for (var key in this.cache) {
+      pruneCacheEntry(this.cache, key, this.keys);
     }
   },
 

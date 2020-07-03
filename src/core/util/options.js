@@ -19,6 +19,7 @@ import {
   isBuiltInTag,
   isPlainObject
 } from 'shared/util'
+import { normalizeChildren } from '../vdom/helpers'
 
 /**
  * Option overwriting strategies are functions that handle
@@ -374,20 +375,24 @@ export function mergeOptions (
   if (typeof child === 'function') {
     child = child.options
   }
-
+  // 統一 props 格式
   normalizeProps(child, vm)
   normalizeInject(child, vm)
+  // 統一 directives 格式
   normalizeDirectives(child)
+  // 如果存在 child.extends
   const extendsFrom = child.extends
   if (extendsFrom) {
     parent = mergeOptions(parent, extendsFrom, vm)
   }
+  // 如果存在 child.mixins
   if (child.mixins) {
     for (let i = 0, l = child.mixins.length; i < l; i++) {
       parent = mergeOptions(parent, child.mixins[i], vm)
     }
   }
   const options = {}
+  // 針對不同 key 採用不同 merge 策略
   let key
   for (key in parent) {
     mergeField(key)

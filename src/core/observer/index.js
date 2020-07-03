@@ -43,14 +43,20 @@ export class Observer {
     this.value = value
     this.dep = new Dep()
     this.vmCount = 0
+    // 將 Observer 實例綁定到 data 的 __ob__ 屬性上面去, 之前說過 observe 的時候會先檢測是否有 __ob__ 對象存放 Observer 實例
+    // 綁定 Observer (this) 至 value 的 __ob__
     def(value, '__ob__', this)
+    // 如果是陣列, 修改為可以截獲響應的數組方法, 替代掉原生的數組方法, 達到監聽數組數據變化的效果
+    // 這裡如果當前瀏覽器支持 __proto__ 屬性, 則直接覆蓋當前數組對象原型上的原生數組方法, 若不支持, 則直接覆蓋掉數組對象的原型
     if (Array.isArray(value)) {
       const augment = hasProto
-        ? protoAugment
-        : copyAugment
+        ? protoAugment // 直接覆蓋原型的方法來修改目標對象
+        : copyAugment //  定義(覆蓋) 目標對象或數組的某一個方法
       augment(value, arrayMethods, arrayKeys)
+      // 如果是數組, 則需要遍歷數組的每一個成員進行 observe
       this.observeArray(value)
     } else {
+      // 若是對象則直接 walk 綁定
       this.walk(value)
     }
   }
@@ -106,6 +112,7 @@ function copyAugment (target: Object, src: Object, keys: Array<string>) {
  * returns the new observer if successfully observed,
  * or the existing observer if the value already has one.
  */
+// 嘗試創建一個 Observer 實例 (__ob__), 若已存在, 回傳原本的
 export function observe (value: any, asRootData: ?boolean): Observer | void {
   if (!isObject(value) || value instanceof VNode) {
     return
@@ -114,6 +121,7 @@ export function observe (value: any, asRootData: ?boolean): Observer | void {
   if (hasOwn(value, '__ob__') && value.__ob__ instanceof Observer) {
     ob = value.__ob__
   } else if (
+    // 確保 value 是單純的對象, 而不是函數或是 Regexp 等情況
     shouldObserve &&
     !isServerRendering() &&
     (Array.isArray(value) || isPlainObject(value)) &&
@@ -140,6 +148,8 @@ export function defineReactive (
 ) {
   const dep = new Dep()
 
+  // 取得 obj 的 key 屬性, 像是 defineProerty 會帶的屬性, writable, value, ...
+  // configurable, 是否可改變其特徵, writable, value, ...
   const property = Object.getOwnPropertyDescriptor(obj, key)
   if (property && property.configurable === false) {
     return

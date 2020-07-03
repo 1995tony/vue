@@ -79,7 +79,9 @@ export function parse (
 
   const stack = []
   const preserveWhitespace = options.preserveWhitespace !== false
+  // 最後反回的 AST 樹 根節點
   let root
+  // 當前父節點
   let currentParent
   let inVPre = false
   let inPre = false

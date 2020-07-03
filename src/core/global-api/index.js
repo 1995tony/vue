@@ -19,6 +19,7 @@ import {
 
 export function initGlobalAPI (Vue: GlobalAPI) {
   // config
+  // 從 config 取得環境變量, 定義在 Vue
   const configDef = {}
   configDef.get = () => config
   if (process.env.NODE_ENV !== 'production') {
@@ -30,6 +31,7 @@ export function initGlobalAPI (Vue: GlobalAPI) {
   }
   Object.defineProperty(Vue, 'config', configDef)
 
+  // 下列全局方法, 除非你意識到風險的發生, 否則別依賴它
   // exposed util methods.
   // NOTE: these are not considered part of the public API - avoid relying on
   // them unless you are aware of the risk.

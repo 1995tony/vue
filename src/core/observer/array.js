@@ -6,6 +6,7 @@
 import { def } from '../util/index'
 
 const arrayProto = Array.prototype
+// 創建新的數組對象, 以免汙染原生數組方法
 export const arrayMethods = Object.create(arrayProto)
 
 const methodsToPatch = [
@@ -27,6 +28,7 @@ methodsToPatch.forEach(function (method) {
   def(arrayMethods, method, function mutator (...args) {
     const result = original.apply(this, args)
     const ob = this.__ob__
+    // 新插入的數組, 需要進行 observe
     let inserted
     switch (method) {
       case 'push':

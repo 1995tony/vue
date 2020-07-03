@@ -14,7 +14,9 @@ const idToTemplate = cached(id => {
   return el && el.innerHTML
 })
 
+// 把原本不帶編譯的 $mount 保留下來, 最後會調用
 const mount = Vue.prototype.$mount
+// 掛載組件, 待模板編譯
 Vue.prototype.$mount = function (
   el?: string | Element,
   hydrating?: boolean
@@ -31,10 +33,13 @@ Vue.prototype.$mount = function (
 
   const options = this.$options
   // resolve template/el and convert to render function
+  // 處理模板 templete, 編譯成 render 函數, render 不存在的時候才會編譯成 templete, 否則優先使用 render
   if (!options.render) {
     let template = options.template
     if (template) {
+      // 當 templete 類型為字串時
       if (typeof template === 'string') {
+        // 檢索 templete 的首字母是 #, 判斷為 id
         if (template.charAt(0) === '#') {
           template = idToTemplate(template)
           /* istanbul ignore if */
@@ -45,15 +50,18 @@ Vue.prototype.$mount = function (
             )
           }
         }
+        // 當 templete 為 dom 節點時
       } else if (template.nodeType) {
         template = template.innerHTML
       } else {
+        // 抱錯
         if (process.env.NODE_ENV !== 'production') {
           warn('invalid template option:' + template, this)
         }
         return this
       }
     } else if (el) {
+      // 獲取 template 的 outerHTML
       template = getOuterHTML(el)
     }
     if (template) {
@@ -61,7 +69,7 @@ Vue.prototype.$mount = function (
       if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
         mark('compile')
       }
-
+      // 將 templete 編譯成 renfer 函數, 這裡會有 render 以及 staticRenderFns 兩個返回, 這是 Vue 的編譯時優化, static 靜態不需要在 VNode 更新時進行 patch, 優化性能
       const { render, staticRenderFns } = compileToFunctions(template, {
         shouldDecodeNewlines,
         shouldDecodeNewlinesForHref,
@@ -78,6 +86,7 @@ Vue.prototype.$mount = function (
       }
     }
   }
+  // 調用 const mount = Vue.prototype.$mount 保存下來的不帶編譯的 mount
   return mount.call(this, el, hydrating)
 }
 
